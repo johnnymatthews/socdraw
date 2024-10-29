@@ -1,10 +1,28 @@
+# Specifies the Vagrantfile version we're using. In this case, version 2.
 Vagrant.configure("2") do |config|
+
+  # Defines the virtual machine (VM) we'll be working with.
+  # We're using the "gusztavvargadr/windows-11" box, which provides a pre-configured Windows 11 environment.
   config.vm.box = "gusztavvargadr/windows-11"
+
+  # Specifies the specific version of the Windows 11 box we want to use. 
+  # In this case, it's version "2302.0.2409". You can find available versions on the provider's page.
   config.vm.box_version = "2302.0.2409"
 
-  vm.provider "virtualbox" do |vb|
-      vb.name = "Defender W11 2024"
-      vb.cpus = 4
-      vb.memory = 8192
-    end
+  # Configures the network adapter for the VM. We're creating a private network adapter
+  # and assigning a static IP address of "192.168.50.10" to the VM.
+  config.vm.network "private_network", ip: "192.168.50.20"
+
+  # Defines configuration specific to the VirtualBox provider.
+  config.vm.provider "virtualbox" do |vb|
+
+    # Sets the display name of the VM in the VirtualBox GUI.
+    vb.name = "Defender W11 2024"
+
+    # Allocates 4 virtual CPUs (cores) to the VM.
+    vb.cpus = 4
+
+    # Assigns 8192 MB (or 8 GB) of memory to the VM.
+    vb.memory = 8192
+  end
 end
