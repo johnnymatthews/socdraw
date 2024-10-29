@@ -24,5 +24,8 @@ Vagrant.configure("2") do |config|
 
     # Assigns 8192 MB (or 8 GB) of memory to the VM.
     vb.memory = 8192
+
+    # Opens the UI in Virtualbox so you can click on stuff.
+    vb.gui = true
   end
 end
