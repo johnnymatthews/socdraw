@@ -1,4 +1,4 @@
-# Socdraw
+# Socdraw 🧦
 
 > A Collection of Vagrantfiles for easily setting up infosec/cyber-security labs.
 
