@@ -1,5 +1,5 @@
 <div align=center>
-    <img alt="A whimsical illustration of a sock drawer overflowing with colorful computer code and a few mismatched socks." width=300 src="./socdraw-header-image.jpg" />
+    <img alt="LLM-generated image: A whimsical illustration of a sock drawer overflowing with colorful computer code and a few mismatched socks." width=300 src="./socdraw-header-image.jpg" />
     <br><br>
     <p><strong>A repository of Vagrantfiles designed to simplify the process of setting up virtual environments for security professionals and enthusiasts. Whether you're practicing penetration testing, incident response, or digital forensics, these pre-configured Vagrantfiles provide a convenient way to spin up virtual machines tailored to your specific needs.</strong></p>
     <hr>
