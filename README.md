@@ -1,5 +1,9 @@
 # Socdraw 🧦
 
+<center>
+    <img src="./socdraw-header-image.jpg" />
+</center>
+
 > A Collection of Vagrantfiles for easily setting up infosec/cyber-security labs.
 
 Socdraw is a repository of Vagrantfiles designed to simplify the process of setting up virtual environments for security professionals and enthusiasts. Whether you're practicing penetration testing, incident response, or digital forensics, these pre-configured Vagrantfiles provide a convenient way to spin up virtual machines tailored to your specific needs.
