@@ -1,7 +1,7 @@
 # Socdraw 🧦
 
 <center>
-    <img src="./socdraw-header-image.jpg" />
+    <img height="500" src="./socdraw-header-image.jpg" />
 </center>
 
 > A Collection of Vagrantfiles for easily setting up infosec/cyber-security labs.
