@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperSecureBank - A Vulnerable Banking App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .nav a {
+            margin-right: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+        .section {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f8f8f8;
+        }
+        form div {
+          margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>SuperSecureBank™</h1>
+    <div class="nav">
+        <div>
+            <a href="#" onclick="showSection('login')">Login</a>
+            <a href="#" onclick="showSection('register')">Register</a>
+            <a href="#" onclick="showSection('about')">About</a>
+        </div>
+        <div id="user-info" class="hidden">
+            Welcome, <span id="username-display"></span>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </div>
+
+    <!-- Login Section - Vulnerable to SQL Injection -->
+    <div id="login" class="section">
+        <h2>Login</h2>
+        <form id="login-form">
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username">
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password">
+            </div>
+            <button type="submit">Login</button>
+        </form>
+        <div id="login-message"></div>
+    </div>
+
+    <!-- Register Section - Vulnerable to XSS -->
+    <div id="register" class="section hidden">
+        <h2>Register</h2>
+        <form id="register-form">
+            <div>
+                <label for="new-username">Username:</label>
+                <input type="text" id="new-username" name="new-username">
+            </div>
+            <div>
+                <label for="new-password">Password:</label>
+                <input type="password" id="new-password" name="new-password">
+            </div>
+            <div>
+                <label for="fullname">Full Name:</label>
+                <input type="text" id="fullname" name="fullname">
+            </div>
+            <div>
+                <label for="bio">About You:</label>
+                <textarea id="bio" name="bio"></textarea>
+            </div>
+            <button type="submit">Register</button>
+        </form>
+    </div>
+
+    <!-- About Section -->
+    <div id="about" class="section hidden">
+        <h2>About SecureBank™</h2>
+        <p>This is a deliberately vulnerable web application for practicing penetration testing techniques.</p>
+        <p>Vulnerabilities included:</p>
+        <ul>
+            <li>SQL Injection (Login Form)</li>
+            <li>Cross-Site Scripting (XSS) (User Profile)</li>
+            <li>Insecure Direct Object References (IDOR)</li>
+            <li>Cross-Site Request Forgery (CSRF)</li>
+            <li>Sensitive Data Exposure</li>
+        </ul>
+        <p><strong>Note:</strong> This application is for educational purposes only.</p>
+    </div>
+
+    <!-- Dashboard Section - Vulnerable to IDOR and CSRF -->
+    <div id="dashboard" class="section hidden">
+        <h2>Dashboard</h2>
+        <h3>Your Account Balance: $<span id="balance">1000.00</span></h3>
+        
+        <div>
+            <h3>Transfer Money</h3>
+            <form id="transfer-form">
+                <div>
+                    <label for="account">To Account ID:</label>
+                    <input type="text" id="account" name="account">
+                </div>
+                <div>
+                    <label for="amount">Amount:</label>
+                    <input type="text" id="amount" name="amount">
+                </div>
+                <button type="submit">Transfer</button>
+            </form>
+        </div>
+
+        <div>
+            <h3>Your Profile</h3>
+            <div id="profile"></div>
+            <a href="#" onclick="showSection('edit-profile')">Edit Profile</a>
+        </div>
+
+        <div>
+            <h3>View Transaction History</h3>
+            <form>
+                <label for="user-id">Account ID:</label>
+                <input type="text" id="user-id" value="12345">
+                <button type="button" onclick="viewTransactions()">View</button>
+            </form>
+            <div id="transactions"></div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Section - Vulnerable to XSS -->
+    <div id="edit-profile" class="section hidden">
+        <h2>Edit Profile</h2>
+        <form id="profile-form">
+            <div>
+                <label for="edit-fullname">Full Name:</label>
+                <input type="text" id="edit-fullname" name="edit-fullname">
+            </div>
+            <div>
+                <label for="edit-bio">About You:</label>
+                <textarea id="edit-bio" name="edit-bio"></textarea>
+            </div>
+            <button type="submit">Save</button>
+        </form>
+    </div>
+
+    <!-- JavaScript with multiple vulnerabilities -->
+    <script>
+        // Mock database
+        const users = [
+            { id: '12345', username: 'admin', password: 'admin123', fullName: 'Admin User', bio: 'I am the admin', balance: 10000 },
+            { id: '67890', username: 'user', password: 'password123', fullName: 'Regular User', bio: 'I am a regular user', balance: 1000 }
+        ];
+
+        const transactions = [
+            { userId: '12345', date: '2025-02-20', amount: 500, description: 'Salary' },
+            { userId: '12345', date: '2025-02-21', amount: -200, description: 'Rent' },
+            { userId: '67890', date: '2025-02-19', amount: 100, description: 'Gift' }
+        ];
+
+        let currentUser = null;
+
+        // Show selected section
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        // Vulnerable login function (SQL Injection)
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // This is intentionally vulnerable to SQL injection
+            // Example: username: admin' --
+            let authenticated = false;
+            
+            // Simulating SQL injection vulnerability
+            if (username.includes("' --")) {
+                // SQL injection successful
+                const injectedUsername = username.split("' --")[0];
+                const user = users.find(u => u.username === injectedUsername);
+                if (user) {
+                    authenticated = true;
+                    currentUser = user;
+                }
+            } else {
+                // Normal authentication
+                const user = users.find(u => u.username === username && u.password === password);
+                if (user) {
+                    authenticated = true;
+                    currentUser = user;
+                }
+            }
+            
+            if (authenticated) {
+                document.getElementById('login-message').innerHTML = 'Login successful!';
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('username-display').textContent = currentUser.username;
+                showSection('dashboard');
+                document.getElementById('balance').textContent = currentUser.balance.toFixed(2);
+                
+                // Vulnerable to XSS
+                document.getElementById('profile').innerHTML = `
+                    <p><strong>Name:</strong> ${currentUser.fullName}</p>
+                    <p><strong>Bio:</strong> ${currentUser.bio}</p>
+                `;
+                
+                document.getElementById('edit-fullname').value = currentUser.fullName;
+                document.getElementById('edit-bio').value = currentUser.bio;
+            } else {
+                document.getElementById('login-message').innerHTML = 'Invalid username or password.';
+            }
+        });
+
+        // Vulnerable registration (stores passwords in plain text)
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('new-username').value;
+            const password = document.getElementById('new-password').value;
+            const fullName = document.getElementById('fullname').value;
+            const bio = document.getElementById('bio').value;
+            
+            // Check if username exists
+            if (users.some(u => u.username === username)) {
+                alert('Username already exists!');
+                return;
+            }
+            
+            // Generate a simple ID
+            const userId = Math.floor(10000 + Math.random() * 90000).toString();
+            
+            // Add new user (with plaintext password - vulnerability)
+            users.push({
+                id: userId,
+                username: username,
+                password: password, // Stored in plaintext - vulnerability
+                fullName: fullName,
+                bio: bio,
+                balance: 1000
+            });
+            
+            alert('Registration successful! Please login.');
+            showSection('login');
+        });
+
+        // Vulnerable profile update (XSS)
+        document.getElementById('profile-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const fullName = document.getElementById('edit-fullname').value;
+            const bio = document.getElementById('edit-bio').value;
+            
+            if (currentUser) {
+                currentUser.fullName = fullName;
+                currentUser.bio = bio;
+                
+                // Vulnerable to XSS - no sanitization
+                document.getElementById('profile').innerHTML = `
+                    <p><strong>Name:</strong> ${fullName}</p>
+                    <p><strong>Bio:</strong> ${bio}</p>
+                `;
+                
+                alert('Profile updated successfully!');
+                showSection('dashboard');
+            }
+        });
+
+        // Vulnerable money transfer (CSRF - no token)
+        document.getElementById('transfer-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const toAccount = document.getElementById('account').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            
+            if (isNaN(amount) || amount <= 0) {
+                alert('Please enter a valid amount.');
+                return;
+            }
+            
+            if (currentUser.balance < amount) {
+                alert('Insufficient funds!');
+                return;
+            }
+            
+            // Find recipient
+            const recipient = users.find(u => u.id === toAccount);
+            if (!recipient) {
+                alert('Recipient account not found.');
+                return;
+            }
+            
+            // Transfer money
+            currentUser.balance -= amount;
+            recipient.balance += amount;
+            
+            // Update display
+            document.getElementById('balance').textContent = currentUser.balance.toFixed(2);
+            
+            // Record transaction
+            const today = new Date().toISOString().split('T')[0];
+            transactions.push({
+                userId: currentUser.id,
+                date: today,
+                amount: -amount,
+                description: `Transfer to account ${toAccount}`
+            });
+            transactions.push({
+                userId: recipient.id,
+                date: today,
+                amount: amount,
+                description: `Transfer from account ${currentUser.id}`
+            });
+            
+            alert('Transfer successful!');
+        });
+
+        // Vulnerable transaction view (IDOR)
+        function viewTransactions() {
+            const userId = document.getElementById('user-id').value;
+            
+            // Vulnerable to IDOR - no authorization check
+            const userTransactions = transactions.filter(t => t.userId === userId);
+            
+            let html = '<table><tr><th>Date</th><th>Amount</th><th>Description</th></tr>';
+            userTransactions.forEach(t => {
+                html += `<tr><td>${t.date}</td><td>$${t.amount.toFixed(2)}</td><td>${t.description}</td></tr>`;
+            });
+            html += '</table>';
+            
+            document.getElementById('transactions').innerHTML = html;
+        }
+
+        // Logout function
+        function logout() {
+            currentUser = null;
+            document.getElementById('user-info').classList.add('hidden');
+            document.getElementById('login-form').reset();
+            document.getElementById('login-message').innerHTML = '';
+            showSection('login');
+        }
+
+        // Default to login screen
+        showSection('login');
+    </script>
+</body>
+</html>
