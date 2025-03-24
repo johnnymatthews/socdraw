@@ -1,0 +1,58 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # Use Ubuntu 22.04 as the base OS
+  config.vm.box = "ubuntu/jammy64"
+  
+  # Set hostname
+  config.vm.hostname = "vulnserver"
+  
+  # Network settings - Forward port 3000 to host
+  config.vm.network "forwarded_port", guest: 3000, host: 3000
+  # Private network for direct access
+  config.vm.network "private_network", ip: "192.168.56.10"
+  
+  # VM configuration
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "vulnerable_app_server"
+    vb.memory = "1024"
+    vb.cpus = 1
+  end
+
+  # Modified provisioning approach for WSL compatibility
+  # Instead of shared folders, we'll copy files after provisioning
+  
+  # Copy app.js to the VM (create this file before running vagrant up)
+  config.vm.provision "file", source: "./app.js", destination: "/tmp/app.js"
+  
+  # Provision script
+  config.vm.provision "shell", inline: <<-SHELL
+    # Create app directory
+    mkdir -p /home/vagrant/app/files
+    mkdir -p /home/vagrant/app/public
+    
+    # Move app.js from tmp to app directory
+    mv /tmp/app.js /home/vagrant/app/app.js
+    
+    # Run the setup script
+    chmod +x /tmp/setup.sh
+    /tmp/setup.sh
+  SHELL
+  
+  # Copy the setup script to the VM
+  config.vm.provision "file", source: "./setup.sh", destination: "/tmp/setup.sh"
+  
+  # Display information after vagrant up
+  config.vm.post_up_message = "
+    Vulnerable App Server is running!
+    
+    Access the application at:
+    http://192.168.56.10:3000 or http://localhost:3000
+    
+    SSH access: vagrant ssh
+    
+    The vulnerable Node.js app is in /home/vagrant/app
+    and is automatically started.
+  "
+end
