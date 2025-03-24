@@ -13,18 +13,112 @@ Vagrant.configure("2") do |config|
   # Private network for direct access
   config.vm.network "private_network", ip: "192.168.56.10"
   
-  # Sync folder - share the app code
-  config.vm.synced_folder "app/", "/home/vagrant/app", create: true
-  
   # VM configuration
   config.vm.provider "virtualbox" do |vb|
     vb.name = "vulnerable_app_server"
     vb.memory = "1024"
     vb.cpus = 1
+    # Better network performance
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
   end
 
-  # Provision script
-  config.vm.provision "shell", path: "setup.sh"
+  # Copy app.js to the VM (create this file before running vagrant up)
+  config.vm.provision "file", source: "./app.js", destination: "/tmp/app.js"
+
+  # Complete provisioning script directly in the Vagrantfile
+  config.vm.provision "shell", inline: <<-SHELL
+    # Update and install dependencies
+    echo "Updating system and installing dependencies..."
+    apt-get update
+    apt-get install -y curl build-essential git
+
+    # Install Node.js and npm
+    echo "Installing Node.js and npm..."
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get install -y nodejs
+
+    # Create empty directory structure
+    echo "Setting up directory structure..."
+    mkdir -p /home/vagrant/app/files
+    mkdir -p /home/vagrant/app/public
+
+    # Move the app.js file to the correct location
+    mv /tmp/app.js /home/vagrant/app/app.js
+
+    # Make sure it listens on all interfaces
+    sed -i 's/app.listen(port)/app.listen(port, "0.0.0.0")/' /home/vagrant/app/app.js 2>/dev/null || true
+
+    # Create example files for path traversal testing
+    echo "Creating dummy files for testing..."
+    echo "This is a secret file that should not be accessible!" > /home/vagrant/secret.txt
+    echo "This is a test file within the allowed directory." > /home/vagrant/app/files/test.txt
+
+    # Install required Node.js packages
+    echo "Installing Node.js packages..."
+    cd /home/vagrant/app
+    npm init -y
+    npm install express body-parser
+
+    # Create a default index.html in public folder
+    cat > /home/vagrant/app/public/index.html << EOF
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vulnerable App</title>
+</head>
+<body>
+    <h1>Vulnerable App Server</h1>
+    <p>This is a deliberately vulnerable application for security testing purposes.</p>
+</body>
+</html>
+EOF
+
+    # Set up file permissions correctly
+    echo "Setting up file permissions..."
+    chown -R vagrant:vagrant /home/vagrant/app
+    chmod -R 755 /home/vagrant/app
+
+    # Set up systemd service to run as vagrant user
+    echo "Setting up systemd service..."
+    cat > /etc/systemd/system/vulnapp.service << EOF
+[Unit]
+Description=Vulnerable Node.js Application
+After=network.target
+
+[Service]
+Type=simple
+User=vagrant
+WorkingDirectory=/home/vagrant/app
+ExecStart=/usr/bin/node /home/vagrant/app/app.js
+Restart=on-failure
+Environment=NODE_ENV=development
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Enable and start the service
+    echo "Starting the application service..."
+    systemctl enable vulnapp.service
+    systemctl start vulnapp.service
+
+    # Install some additional tools for testing
+    echo "Installing additional security tools..."
+    apt-get install -y nmap netcat-openbsd curl wget
+
+    # Display status information
+    echo "====== SERVICE STATUS ======"
+    systemctl status vulnapp --no-pager
+    echo "====== NETWORK INTERFACES ======"
+    ip addr
+    echo "====== LISTENING PORTS ======"
+    netstat -tulpn | grep node
+
+    # For WSL users, explicitly show IP for connections
+    echo "====== CONNECTION INFO ======"
+    echo "Connect to your app at: http://$(hostname -I | awk '{print $1}'):3000 or http://localhost:3000"
+  SHELL
   
   # Display information after vagrant up
   config.vm.post_up_message = "
@@ -36,6 +130,5 @@ Vagrant.configure("2") do |config|
     SSH access: vagrant ssh
     
     The vulnerable Node.js app is in /home/vagrant/app
-    and is automatically started.
   "
 end
